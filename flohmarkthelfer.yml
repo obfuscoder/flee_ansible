@@ -1,0 +1,107 @@
+- hosts: all
+  tasks:
+    - name: add user flohmarkthelfer
+      user:
+        name: flohmarkthelfer
+        shell: /bin/bash
+    - name: Set authorized key for user flohmarkthelfer copying it from current user
+      authorized_key:
+        user: flohmarkthelfer
+        key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
+    - name: check rvm
+      command: $HOME/.rvm/bin/rvm -v
+      register: rvm_check
+      ignore_errors: true
+      become: true
+      become_user: flohmarkthelfer
+    - name: install rvm
+      shell: |
+        gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3 7D2BAF1CF37B13E2069D6956105BD0E739499BDB
+        curl -sSL https://get.rvm.io | bash -s stable
+        $HOME/.rvm/bin/rvm autolibs fail
+      become: true
+      become_user: flohmarkthelfer
+      when: rvm_check|failed
+    - name: update rvm
+      command: $HOME/.rvm/bin/rvm update
+      become: true
+      become_user: flohmarkthelfer
+      when: rvm_check|succeeded
+    - name: install ruby
+      command: $HOME/.rvm/bin/rvm install ruby-2.4.1 --default
+      become: true
+      become_user: flohmarkthelfer
+    - name: install bundler
+      command: $HOME/.rvm/bin/rvm all do gem install bundler
+      become: true
+      become_user: flohmarkthelfer
+    - name: create shared config folders
+      file:
+        path: /home/flohmarkthelfer/www/shared/config/settings/brands
+        state: directory
+        group: flohmarkthelfer
+        owner: flohmarkthelfer
+    - name: create shared database config
+      copy:
+        content: |
+          production:
+            adapter: mysql2
+            encoding: utf8
+            database: flohmarkthelfer
+            username: flohmarkthelfer
+            password: flohmarkthelfer
+            host: 127.0.0.1
+            port: 3306
+            secure_auth: false
+        dest: /home/flohmarkthelfer/www/shared/config/database.yml
+        group: flohmarkthelfer
+        owner: flohmarkthelfer
+    - name: create shared secret config
+      copy:
+        content: |
+          production:
+            secret_key_base: 215c4e4a0ba774cadc8085fb66356e3c5ead7f9969a50d0eec809323297e30f5557a34e96462a01714bd4ec50ff807708ac7838432acb4b62a3a5db65677c90c
+        dest: /home/flohmarkthelfer/www/shared/config/secrets.yml
+        group: flohmarkthelfer
+        owner: flohmarkthelfer
+    - name: create backup folders
+      file:
+        path: /home/flohmarkthelfer/www/shared/backup/db
+        state: directory
+        group: flohmarkthelfer
+        owner: flohmarkthelfer
+    - name: create pids folders
+      file:
+        path: /home/flohmarkthelfer/www/shared/tmp/pids
+        state: directory
+        group: flohmarkthelfer
+        owner: flohmarkthelfer
+    - name: create database
+      mysql_db:
+        encoding: utf8
+        name: flohmarkthelfer
+    - name: create db user
+      mysql_user:
+        name: flohmarkthelfer
+        password: flohmarkthelfer
+        priv: flohmarkthelfer.*:ALL
+    - name: install systemd config for flohmarkthelfer puma server
+      copy:
+        content: |
+          [Unit]
+          Description=Flohmarkthelfer web service running on PUMA
+          After=network.target
+
+          [Service]
+          Type=simple
+          User=flohmarkthelfer
+          Group=flohmarkthelfer
+          WorkingDirectory=/home/flohmarkthelfer/www/current
+          ExecStart=/home/flohmarkthelfer/.rvm/bin/rvm all do bundle exec puma -C /home/flohmarkthelfer/www/shared/config/puma.rb
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/flohmarkthelfer.service
+    - name: Start flohmarkthelfer service
+      systemd: state=started name=flohmarkthelfer
