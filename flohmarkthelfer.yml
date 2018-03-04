@@ -56,14 +56,14 @@
         dest: /home/flohmarkthelfer/www/shared/config/database.yml
         group: flohmarkthelfer
         owner: flohmarkthelfer
-    - name: create shared secret config
-      copy:
-        content: |
-          production:
-            secret_key_base: 215c4e4a0ba774cadc8085fb66356e3c5ead7f9969a50d0eec809323297e30f5557a34e96462a01714bd4ec50ff807708ac7838432acb4b62a3a5db65677c90c
-        dest: /home/flohmarkthelfer/www/shared/config/secrets.yml
-        group: flohmarkthelfer
-        owner: flohmarkthelfer
+    #- name: create shared secret config - this neeeds to be generated on server with bundle exec rake secret
+    #  copy:
+    #    content: |
+    #      production:
+    #        secret_key_base: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    #    dest: /home/flohmarkthelfer/www/shared/config/secrets.yml
+    #    group: flohmarkthelfer
+    #    owner: flohmarkthelfer
     - name: create backup folders
       file:
         path: /home/flohmarkthelfer/www/shared/backup/db
@@ -89,7 +89,7 @@
       copy:
         content: |
           [Unit]
-          Description=Flohmarkthelfer web service running on PUMA
+          Description=Flohmarkthelfer web service
           After=network.target
 
           [Service]
@@ -97,11 +97,41 @@
           User=flohmarkthelfer
           Group=flohmarkthelfer
           WorkingDirectory=/home/flohmarkthelfer/www/current
-          ExecStart=/home/flohmarkthelfer/.rvm/bin/rvm all do bundle exec puma -C /home/flohmarkthelfer/www/shared/config/puma.rb
+          ExecStart=/home/flohmarkthelfer/.rvm/bin/rvm 2.4.1 do bundle exec puma -C /home/flohmarkthelfer/www/shared/config/puma.rb
           Restart=always
 
           [Install]
           WantedBy=multi-user.target
         dest: /etc/systemd/system/flohmarkthelfer.service
-    - name: Start flohmarkthelfer service
-      systemd: state=started name=flohmarkthelfer
+      notify: restart web service
+    - name: install systemd config for flohmarkthelfer worker
+      copy:
+        content: |
+          [Unit]
+          Description=Flohmarkthelfer worker service
+          After=network.target
+
+          [Service]
+          Type=simple
+          User=flohmarkthelfer
+          Group=flohmarkthelfer
+          Environment='RAILS_ENV=production'
+          WorkingDirectory=/home/flohmarkthelfer/www/current
+          ExecStart=/home/flohmarkthelfer/.rvm/bin/rvm 2.4.1 do bundle exec bin/delayed_job
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/flohmarkthelfer-worker.service
+      notify: restart worker service
+  handlers:
+    - name: restart web service
+      systemd:
+        name: flohmarkthelfer
+        state: restarted
+        daemon_reload: yes
+    - name: restart worker service
+      systemd:
+        name: flohmarkthelfer-worker
+        state: restarted
+        daemon_reload: yes

@@ -40,3 +40,6 @@
         - mailutils
         - procmail
         - mutt
+        - opendkim
+        - opendkim-tools
+        - vim
