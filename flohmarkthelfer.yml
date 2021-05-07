@@ -21,12 +21,12 @@
         $HOME/.rvm/bin/rvm autolibs fail
       become: true
       become_user: flohmarkthelfer
-      when: rvm_check|failed
+      when: rvm_check is failed
     - name: update rvm
       command: $HOME/.rvm/bin/rvm update
       become: true
       become_user: flohmarkthelfer
-      when: rvm_check|succeeded
+      when: rvm_check is succeeded
     - name: install ruby
       command: $HOME/.rvm/bin/rvm install ruby-2.7.3 --default
       become: true
@@ -80,11 +80,13 @@
       mysql_db:
         encoding: utf8
         name: flohmarkthelfer
-    - name: create db user
-      mysql_user:
-        name: flohmarkthelfer
-        password: flohmarkthelfer
-        priv: flohmarkthelfer.*:ALL
+    # stopped working with error: 'database' is an invalid keyword argument for this function
+    # - name: create db user
+    #  mysql_user:
+    #    name: flohmarkthelfer
+    #    password: flohmarkthelfer
+    #    priv: 'flohmarkthelfer.*:ALL'
+    #    state: present
     - name: install systemd config for flohmarkthelfer puma server
       copy:
         content: |
