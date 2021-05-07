@@ -28,7 +28,7 @@
       become_user: flohmarkthelfer
       when: rvm_check|succeeded
     - name: install ruby
-      command: $HOME/.rvm/bin/rvm install ruby-2.5.7 --default
+      command: $HOME/.rvm/bin/rvm install ruby-2.7.3 --default
       become: true
       become_user: flohmarkthelfer
     - name: install bundler
@@ -97,7 +97,7 @@
           User=flohmarkthelfer
           Group=flohmarkthelfer
           WorkingDirectory=/home/flohmarkthelfer/www/current
-          ExecStart=/home/flohmarkthelfer/.rvm/bin/rvm 2.5.7 do bundle exec puma -C /home/flohmarkthelfer/www/shared/config/puma.rb
+          ExecStart=/home/flohmarkthelfer/.rvm/bin/rvm 2.7.3 do bundle exec puma -C /home/flohmarkthelfer/www/shared/config/puma.rb
           Restart=always
 
           [Install]
@@ -117,7 +117,7 @@
           Group=flohmarkthelfer
           Environment='RAILS_ENV=production'
           WorkingDirectory=/home/flohmarkthelfer/www/current
-          ExecStart=/home/flohmarkthelfer/.rvm/bin/rvm 2.5.7 do bundle exec bin/delayed_job
+          ExecStart=/home/flohmarkthelfer/.rvm/bin/rvm 2.7.3 do bundle exec bin/delayed_job
           Restart=always
 
           [Install]
